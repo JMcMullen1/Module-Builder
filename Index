@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Module Builder (Block-Based)</title>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --primary-dark: #5a67d8;
+            --success-color: #4ade80;
+            --warning-color: #ffa500;
+            --danger-color: #f87171;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e0e0e0;
+            --dark-blue: #2b3d6d;
+            --text-color: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .builder-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: var(--dark-blue);
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .progress-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            position: relative;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .progress-indicator::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--medium-gray);
+            z-index: 1;
+        }
+
+        .progress-step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--medium-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #999;
+            position: relative;
+            z-index: 2;
+            font-size: 12px;
+        }
+
+        .progress-step.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .progress-step.completed {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .form-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--medium-gray);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-group .help-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background: #f0f4ff;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        /* BLOCK-BASED STYLES */
+        .block-container {
+            border: 2px dashed var(--medium-gray);
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 300px;
+            position: relative;
+        }
+        
+        .content-block {
+            background: var(--light-gray);
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .block-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            background: white;
+            padding: 5px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .block-controls button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #888;
+            padding: 5px;
+        }
+        .block-controls button:hover {
+            color: var(--dark-blue);
+        }
+        
+        .add-block-center-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 15px;
+            border: 2px dashed var(--primary-color);
+            background: #f0f4ff;
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .add-block-center-btn:hover {
+            background: #e0e9ff;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 5vh 0;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 700px;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .modal-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .modal-option {
+            background: var(--light-gray);
+            border: 2px solid var(--medium-gray);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .modal-option:hover {
+            border-color: var(--primary-color);
+            background: #f0f4ff;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .modal-option span {
+            display: block;
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        /* TEXT EDITOR STYLES */
+        .text-editor-toolbar {
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        .text-editor-toolbar button {
+            background: none;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .text-editor-toolbar button:hover {
+            background: #f0f0f0;
+        }
+        .text-editor-content {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 150px;
+            border-radius: 5px;
+            background: white;
+            line-height: 1.6;
+        }
+        
+        /* INTERACTIVE & QUIZ CONFIG STYLES */
+        .config-container {
+            background: #fff;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .interactive-item, .quiz-question-item {
+            padding: 10px;
+            background: var(--light-gray);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .interactive-item .form-group, .quiz-question-item .form-group { margin-bottom: 10px; }
+        .remove-item-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            line-height: 20px;
+            text-align: center;
+        }
+        .add-item-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="builder-container">
+        <div class="header">
+            <h1>📚 Training Module Builder</h1>
+            <p>Create professional training modules with a block-based editor</p>
+        </div>
+
+        <!-- Continue Where You Left Off Section -->
+        <div id="continueSection" style="background: #f0f4ff; border: 2px dashed var(--primary-color); border-radius: 12px; padding: 25px; margin-bottom: 30px; text-align: center;">
+            <h3 style="color: var(--dark-blue); margin-bottom: 15px;">📂 Continue Where You Left Off</h3>
+            <p style="color: #666; margin-bottom: 20px;">Have a saved module? Upload it here to continue editing</p>
+            <input type="file" id="continueFileInput" accept=".html" style="display: none;" onchange="handleContinueFile(this)">
+            <button class="btn btn-primary" onclick="document.getElementById('continueFileInput').click()">
+                Upload Saved Module
+            </button>
+            <button class="btn btn-secondary" onclick="startFresh()" style="margin-left: 10px;">
+                Start Fresh
+            </button>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-indicator" style="display: none;" id="progressIndicatorContainer">
+            <div class="progress-step active" id="step1">1</div>
+            <div class="progress-step" id="step2">2</div>
+            <div class="progress-step" id="step3">3</div>
+            <div class="progress-step" id="step4">4</div>
+            <div class="progress-step" id="step5">5</div>
+            <div class="progress-step" id="step6">6</div>
+            <div class="progress-step" id="step7">7</div>
+            <div class="progress-step" id="step8">8</div>
+            <div class="progress-step" id="step9">9</div>
+            <div class="progress-step" id="step10">10</div>
+            <div class="progress-step" id="step11">11</div>
+            <div class="progress-step" id="step12">12</div>
+            <div class="progress-step" id="step13">13</div>
+            <div class="progress-step" id="step14">14</div>
+            <div class="progress-step" id="step15">15</div>
+            <div class="progress-step" id="step16">✓</div>
+        </div>
+
+        <!-- Step 1-3: Standard Info -->
+        <div class="form-section" id="section1">
+            <h2>Step 1: Course Name</h2>
+             <div class="form-group">
+                <label for="courseName">Course of Study *</label>
+                <input type="text" id="courseName" placeholder="e.g., Project Management L4">
+            </div>
+            <div class="button-group">
+                <div></div>
+                <button class="btn btn-primary" onclick="goToStep(2)">Next Step →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section2">
+            <h2>Step 2: Module & Lesson</h2>
+            <div class="form-group">
+                <label for="moduleName">Module Name *</label>
+                <input type="text" id="moduleName" placeholder="e.g., Initiating a project">
+            </div>
+            <div class="form-group">
+                <label for="lessonName">Lesson Name *</label>
+                <input type="text" id="lessonName" placeholder="e.g., Introduction">
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+                <button class="btn btn-primary" onclick="goToStep(3)">Next Step →</button>
+            </div>
+        </div>
+        
+        <div class="form-section" id="section3">
+            <h2>Step 3: Lesson Progress</h2>
+            <div class="form-group">
+                <label for="currentLesson">Current Lesson Number *</label>
+                <input type="number" id="currentLesson" min="1" placeholder="e.g., 2" required>
+            </div>
+            <div class="form-group">
+                <label for="totalLessons">Total Number of Lessons *</label>
+                <input type="number" id="totalLessons" min="1" placeholder="e.g., 4" required>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+                <button class="btn btn-primary" onclick="goToStep(4)">Next Step →</button>
+            </div>
+        </div>
+
+        <!-- Content Sections Start Here -->
+        <div class="form-section" id="section4">
+            <h2>Step 4: LEARNING INTENT</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Learning Intent' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-learning_intent">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(5)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section5">
+            <h2>Step 5: OBJECTIVES</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Objectives' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-objectives">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(4)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(6)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section6">
+            <h2>Step 6: KEY DEFINITIONS</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Key Definitions' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-key_definitions">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(5)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(7)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section7">
+            <h2>Step 7: KNOWLEDGE SECTION</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Knowledge' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-knowledge">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(6)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(8)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section8">
+            <h2>Step 8: PUTTING INTO PRACTICE</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Putting into Practice' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-practice">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(7)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(9)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section9">
+            <h2>Step 9: RECALL</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Recall' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-recall">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(8)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(10)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section10">
+            <h2>Step 10: BUILDING BLOCKS</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Building Blocks' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-building_blocks">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(9)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(11)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section11">
+            <h2>Step 11: DEEPER LEARNING & MASTERY</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Deeper Learning' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-deeper_learning">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(10)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(12)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section12">
+            <h2>Step 12: SUMMARY & RECAP</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Summary' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-summary">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(11)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(13)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section13">
+            <h2>Step 13: ACTIONS & NEXT STEPS</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Actions' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-actions">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(12)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(14)">Next →</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="section14">
+            <h2>Step 14: YOUR SMART GOALS</h2>
+            <p style="color: #666; margin-bottom: 20px;">Build the 'Smart Goals' section by adding content blocks.</p>
+            <div class="block-container" id="block-container-smart_goals">
+                <button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(13)">← Back</button>
+                 <button class="btn btn-primary" onclick="doPreview()">Preview Module</button>
+                <button class="btn btn-success" onclick="goToStep(15)">Next - Final Review →</button>
+            </div>
+        </div>
+        
+        <!-- Step 15: Final Review Section -->
+        <div class="form-section" id="section15">
+            <h2>Step 15: Final Review</h2>
+            <p style="color: #666; margin-bottom: 20px;">Review your module before generating the final HTML.</p>
+            <div id="finalSummaryPreview"></div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep(14)">← Back</button>
+                <button class="btn btn-primary" onclick="doPreview()">Preview Full Module</button>
+                <button class="btn btn-success" onclick="generateFinalHTML()">Generate HTML Module 🚀</button>
+            </div>
+        </div>
+
+        <!-- Completion Section -->
+        <div class="form-section" id="completionSection">
+            <div class="completion-message" style="text-align: center; padding: 40px;">
+                <h2 style="color: var(--success-color); margin-bottom: 20px;">✅ Module Generated Successfully!</h2>
+                <p style="color: #666; margin-bottom: 30px;">Your training module HTML has been created. Preview it, make edits, or download when ready.</p>
+                <div style="margin: 30px 0;">
+                    <button class="btn btn-primary" onclick="doPreview()">Preview Module 👁️</button>
+                    <button class="btn btn-success" onclick="downloadHTML()" style="margin-left: 10px;">Download HTML File ⬇</button>
+                </div>
+                 <button class="btn btn-secondary" onclick="goToStep(14)" style="margin-top: 10px;">← Back to Editor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD BLOCK MODAL -->
+    <div class="modal-overlay" id="addBlockModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeAddBlockModal()">×</button>
+            <h3 style="text-align: center; margin-bottom: 25px; color: var(--dark-blue);">Choose a Content Block</h3>
+            <div class="modal-options">
+                <div class="modal-option" onclick="addBlock('title_text')"><span>📝</span> Title & Text</div>
+                <div class="modal-option" onclick="addBlock('text')"><span>📄</span> Text</div>
+                <div class="modal-option" onclick="addBlock('image')"><span>🖼️</span> Image</div>
+                <div class="modal-option" onclick="addBlock('interactive')"><span>🎮</span> Interactive</div>
+                <div class="modal-option" onclick="addBlock('feedback')"><span>💬</span> Feedback Box</div>
+                <div class="modal-option" onclick="addBlock('quiz')"><span>❓</span> Quiz</div>
+                <div class="modal-option" onclick="addBlock('custom')"><span>🔗</span> Custom Embed</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 15;
+
+        // --- SECTION DEFINITIONS ---
+        const moduleSections = {
+            learning_intent: "LEARNING INTENT",
+            objectives: "OBJECTIVES",
+            key_definitions: "KEY DEFINITIONS",
+            knowledge: "KNOWLEDGE SECTION",
+            practice: "PUTTING INTO PRACTICE",
+            recall: "RECALL",
+            building_blocks: "BUILDING BLOCKS",
+            deeper_learning: "DEEPER LEARNING & MASTERY",
+            summary: "SUMMARY & RECAP",
+            actions: "ACTIONS & NEXT STEPS",
+            smart_goals: "YOUR SMART GOALS"
+        };
+
+        // Make startFresh globally accessible
+        window.startFresh = function() {
+            document.getElementById('continueSection').style.display = 'none';
+            document.getElementById('progressIndicatorContainer').style.display = 'flex';
+            // Clear all sections first
+            document.querySelectorAll('.form-section').forEach(s => {
+                s.style.display = 'none';
+                s.classList.remove('active');
+            });
+            // Now show and activate section 1
+            const section1 = document.getElementById('section1');
+            if (section1) {
+                section1.style.display = 'block';
+                section1.classList.add('active');
+            }
+            currentStep = 1;
+            updateProgressIndicator();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize - hide all sections initially except continue section
+            document.querySelectorAll('.form-section').forEach(s => {
+                s.style.display = 'none';
+                s.classList.remove('active');
+            });
+            document.getElementById('progressIndicatorContainer').style.display = 'none';
+            document.getElementById('continueSection').style.display = 'block';
+        });
+
+        function handleContinueFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const htmlContent = e.target.result;
+                    restoreFromHTML(htmlContent);
+                } catch (error) {
+                    alert('Error loading file. Please ensure it\'s a valid module HTML file.');
+                    console.error('Error:', error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function restoreFromHTML(htmlContent) {
+            // Parse the HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent, 'text/html');
+            
+            // Extract basic module info from the title and content
+            const titleElement = doc.querySelector('.content-title h1');
+            const courseHeader = doc.querySelector('.sidebar-header h2');
+            const lessonInfo = doc.querySelector('.lesson-info');
+            
+            // Hide continue section and show builder
+            document.getElementById('continueSection').style.display = 'none';
+            document.getElementById('progressIndicatorContainer').style.display = 'flex';
+            
+            // Hide all form sections initially
+            document.querySelectorAll('.form-section').forEach(s => {
+                s.style.display = 'none';
+                s.classList.remove('active');
+            });
+            
+            // Extract course name
+            if (courseHeader) {
+                const courseText = courseHeader.textContent.trim();
+                document.getElementById('courseName').value = courseText;
+            }
+            
+            // Extract module and lesson names
+            if (titleElement) {
+                const titleText = titleElement.textContent;
+                const parts = titleText.split(' - ');
+                if (parts[0]) document.getElementById('moduleName').value = parts[0].trim();
+                if (parts[1]) document.getElementById('lessonName').value = parts[1].trim();
+            }
+            
+            // Extract lesson numbers
+            if (lessonInfo) {
+                const lessonText = lessonInfo.textContent;
+                const match = lessonText.match(/Lesson (\d+) of (\d+)/);
+                if (match) {
+                    document.getElementById('currentLesson').value = match[1];
+                    document.getElementById('totalLessons').value = match[2];
+                }
+            }
+            
+            // Extract content blocks for each section
+            let lastFilledStep = 3; // Start after basic info
+            
+            Object.keys(moduleSections).forEach((sectionKey, index) => {
+                const sectionElement = doc.getElementById(sectionKey);
+                if (sectionElement) {
+                    const sectionStep = index + 4; // Sections start at step 4
+                    const blockContainer = document.getElementById(`block-container-${sectionKey}`);
+                    
+                    if (blockContainer) {
+                        // Clear existing content
+                        blockContainer.innerHTML = '';
+                        
+                        // Extract and rebuild blocks
+                        const contentWrappers = sectionElement.querySelectorAll('.section-content-wrapper');
+                        if (contentWrappers.length > 0) {
+                            contentWrappers.forEach(wrapper => {
+                                restoreContentBlockEnhanced(wrapper, blockContainer, doc);
+                            });
+                            lastFilledStep = Math.max(lastFilledStep, sectionStep);
+                            
+                            // Add the "Add Another Block" button
+                            const addButton = document.createElement('button');
+                            addButton.className = 'add-block-center-btn';
+                            addButton.style.marginTop = '15px';
+                            addButton.innerHTML = `<span style="font-size: 24px; margin-right: 10px;">+</span> Add Another Block`;
+                            addButton.onclick = openAddBlockModal;
+                            blockContainer.appendChild(addButton);
+                        } else {
+                            // No content, show initial add button
+                            blockContainer.innerHTML = `<button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>`;
+                        }
+                    }
+                }
+            });
+            
+            // Navigate to the next unfilled step or the last filled step
+            const targetStep = Math.min(lastFilledStep + 1, totalSteps);
+            goToStep(targetStep);
+            
+            // Show success message
+            alert(`Module loaded successfully! Resuming from Step ${targetStep}.`);
+        }
+
+        function restoreContentBlockEnhanced(wrapper, container, doc) {
+            const block = document.createElement('div');
+            block.className = 'content-block';
+            
+            // Helper function to escape HTML attributes
+            function escapeHtml(text) {
+                const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+                return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
+            }
+            
+            // Detect block type and restore content
+            let blockType = '';
+            let content = '';
+            
+            // Check for different block types
+            if (wrapper.querySelector('.key-definition-box')) {
+                // Title & Text Block
+                blockType = 'title_text';
+                const titleEl = wrapper.querySelector('.key-definition-box h4');
+                const textEl = wrapper.querySelector('.key-definition-box div');
+                const bgImage = wrapper.querySelector('.definition-background-image img');
+                const voiceoverUrl = wrapper.dataset.audioSrc || '';
+                
+                content = `<h5>Title & Text Block</h5>
+                           <div class="form-group">
+                               <label>Title</label>
+                               <input type="text" class="block-input" data-name="title" value="${escapeHtml(titleEl ? titleEl.textContent.trim() : '')}">
+                           </div>
+                           <div class="form-group">
+                               <label>Text</label>
+                               <div class="text-editor-toolbar">
+                                   <button type="button" onmousedown="event.preventDefault(); formatDoc('bold')"><b>B</b></button>
+                                   <button type="button" onmousedown="event.preventDefault(); formatDoc('italic')"><i>I</i></button>
+                                   <button type="button" onmousedown="event.preventDefault(); formatDoc('underline')"><u>U</u></button>
+                                   <button type="button" onmousedown="event.preventDefault(); formatDoc('insertUnorderedList')">•</button>
+                               </div>
+                               <div class="text-editor-content block-input" data-name="htmlContent" contenteditable="true">${textEl ? textEl.innerHTML : ''}</div>
+                           </div>
+                           <div class="form-group">
+                               <label>Background Image URL (optional)</label>
+                               <input type="url" class="block-input" data-name="bgImage" value="${bgImage ? bgImage.src : ''}">
+                           </div>
+                           <div class="form-group">
+                               <label>Voiceover Audio URL (optional)</label>
+                               <input type="url" class="block-input" data-name="voiceoverUrl" value="${voiceoverUrl}" placeholder="https://example.com/audio.mp3">
+                           </div>`;
+            } else if (wrapper.querySelector('.text-content-render')) {
+                // Text Block
+                blockType = 'text';
+                const textContent = wrapper.querySelector('.text-content-render');
+                const voiceoverUrl = wrapper.dataset.audioSrc || '';
+                
+                content = `<h5>Text Block</h5>
+                           <div class="form-group">
+                               <label>Text</label>
+                               <div class="text-editor-toolbar">
+                                   <button type="button" onmousedown="event.preventDefault(); formatDoc('bold')"><b>B</b></button>
+                                   <button type="button" onmousedown="event.preventDefault(); formatDoc('italic')"><i>I</i></button>
+                                   <button type="button" onmousedown="event.preventDefault(); formatDoc('underline')"><u>U</u></button>
+                                   <button type="button" onmousedown="event.preventDefault(); formatDoc('insertUnorderedList')">•</button>
+                               </div>
+                               <div class="text-editor-content block-input" data-name="htmlContent" contenteditable="true">${textContent ? textContent.innerHTML : ''}</div>
+                           </div>
+                           <div class="form-group">
+                               <label>Voiceover Audio URL (optional)</label>
+                               <input type="url" class="block-input" data-name="voiceoverUrl" value="${voiceoverUrl}" placeholder="https://example.com/audio.mp3">
+                           </div>`;
+            } else if (wrapper.querySelector('.content-image')) {
+                // Image Block
+                blockType = 'image';
+                const img = wrapper.querySelector('.content-image');
+                const width = img ? img.style.width : '100%';
+                let size = 'full';
+                if (width === '50%') size = 'medium';
+                else if (width === '75%') size = 'large';
+                
+                content = `<h5>Image Block</h5>
+                           <div class="form-group">
+                               <label>Image URL</label>
+                               <input type="url" class="block-input" data-name="src" value="${img ? img.src : ''}" placeholder="https://example.com/image.png">
+                           </div>
+                           <div class="form-group">
+                               <label>Image Size</label>
+                               <select class="block-input" data-name="size">
+                                   <option value="medium" ${size === 'medium' ? 'selected' : ''}>Medium (50%)</option>
+                                   <option value="large" ${size === 'large' ? 'selected' : ''}>Large (75%)</option>
+                                   <option value="full" ${size === 'full' ? 'selected' : ''}>Full Width (100%)</option>
+                               </select>
+                           </div>`;
+            } else if (wrapper.querySelector('.feedback-box-render')) {
+                // Feedback Block
+                blockType = 'feedback';
+                const instruction = wrapper.querySelector('.feedback-box-render h4');
+                
+                content = `<h5>Feedback Textbox</h5>
+                           <div class="form-group">
+                               <label>Instruction Text</label>
+                               <input type="text" class="block-input" data-name="instruction" value="${escapeHtml(instruction ? instruction.textContent : 'Test Your Recall:')}">
+                           </div>
+                           <textarea readonly disabled placeholder="Student will type here..."></textarea>`;
+            } else if (wrapper.querySelector('.quiz-container')) {
+                // Quiz Block with full restoration
+                blockType = 'quiz';
+                const quizContainer = wrapper.querySelector('.quiz-container');
+                const quizIntro = quizContainer.querySelector('.quiz-intro');
+                const questions = quizContainer.querySelectorAll('.quiz-question-wrapper');
+                
+                content = `<h5>Quiz Block</h5>
+                           <div class="form-group">
+                               <label>Quiz Introduction (optional)</label>
+                               <input type="text" class="block-input" data-name="intro" value="${escapeHtml(quizIntro ? quizIntro.textContent : '')}" placeholder="Check your understanding...">
+                           </div>
+                           <div class="config-container quiz-config-container">
+                               <div class="items-container" data-item-type="question">`;
+                
+                // Add each question
+                questions.forEach(q => {
+                    const questionText = q.querySelector('.quiz-question-text');
+                    const options = q.querySelectorAll('.quiz-option');
+                    const correctFeedback = q.querySelector('.quiz-feedback.correct p');
+                    const incorrectFeedback = q.querySelector('.quiz-feedback.incorrect p');
+                    
+                    // Extract question number and text
+                    const qText = questionText ? questionText.textContent.replace(/^Q\d+:\s*/, '') : '';
+                    
+                    // Find which answer is correct by checking the onclick attribute
+                    const checkBtn = q.querySelector('.quiz-check-btn');
+                    const onclickAttr = checkBtn ? checkBtn.getAttribute('onclick') : '';
+                    const correctMatch = onclickAttr.match(/'([A-D])'/);
+                    const correctAnswer = correctMatch ? correctMatch[1] : 'A';
+                    
+                    content += `<div class="quiz-question-item">
+                                <div class="form-group"><label>Question</label><input type="text" data-name="question" class="block-input" value="${escapeHtml(qText)}"></div>
+                                <div class="form-group"><label>Option A</label><input type="text" data-name="optA" class="block-input" value="${escapeHtml(options[0] ? options[0].querySelector('p').textContent : '')}"></div>
+                                <div class="form-group"><label>Option B</label><input type="text" data-name="optB" class="block-input" value="${escapeHtml(options[1] ? options[1].querySelector('p').textContent : '')}"></div>
+                                <div class="form-group"><label>Option C</label><input type="text" data-name="optC" class="block-input" value="${escapeHtml(options[2] ? options[2].querySelector('p').textContent : '')}"></div>
+                                <div class="form-group"><label>Option D</label><input type="text" data-name="optD" class="block-input" value="${escapeHtml(options[3] ? options[3].querySelector('p').textContent : '')}"></div>
+                                <div class="form-group"><label>Correct Answer</label><select data-name="correct" class="block-input">
+                                    <option value="A" ${correctAnswer === 'A' ? 'selected' : ''}>A</option>
+                                    <option value="B" ${correctAnswer === 'B' ? 'selected' : ''}>B</option>
+                                    <option value="C" ${correctAnswer === 'C' ? 'selected' : ''}>C</option>
+                                    <option value="D" ${correctAnswer === 'D' ? 'selected' : ''}>D</option>
+                                </select></div>
+                                <div class="form-group"><label>Correct Feedback</label><textarea data-name="correctFeedback" class="block-input" rows="2" placeholder="Well done!">${escapeHtml(correctFeedback ? correctFeedback.textContent.replace('Correct! ', '') : '')}</textarea></div>
+                                <div class="form-group"><label>Incorrect Feedback</label><textarea data-name="incorrectFeedback" class="block-input" rows="2" placeholder="Not quite, the correct answer is...">${escapeHtml(incorrectFeedback ? incorrectFeedback.textContent.replace('Incorrect. ', '') : '')}</textarea></div>
+                                <button class="remove-item-btn" onclick="this.parentElement.remove()">×</button></div>`;
+                });
+                
+                content += `</div>
+                           <button class="add-item-btn" onclick="addQuizQuestionItem(this)">+ Add Question</button>
+                           </div>`;
+            } else if (wrapper.querySelector('.interactive-activity-wrapper')) {
+                // Interactive Block with full restoration
+                blockType = 'interactive';
+                const activityWrapper = wrapper.querySelector('.interactive-activity-wrapper');
+                let interactiveType = '';
+                let configHTML = '';
+                
+                // Detect interactive type
+                if (activityWrapper.querySelector('.matching-container')) {
+                    interactiveType = 'matching';
+                    const matchingContainer = activityWrapper.querySelector('.matching-container');
+                    const instructions = matchingContainer.querySelector('.matching-instructions');
+                    const leftItems = matchingContainer.querySelectorAll('.matching-column:first-child .matching-item');
+                    const rightItems = matchingContainer.querySelectorAll('.matching-column:last-child .matching-item');
+                    
+                    configHTML = `<div class="form-group"><label>Instructions</label><input type="text" class="block-input" data-name="instructions" value="${escapeHtml(instructions ? instructions.textContent : '')}" placeholder="Match the terms to their definitions."></div>
+                                  <div class="items-container" data-item-type="pair">`;
+                    
+                    // Match left and right items by data-match-id
+                    leftItems.forEach((leftItem, i) => {
+                        const matchId = leftItem.dataset.matchId;
+                        const rightItem = Array.from(rightItems).find(r => r.dataset.matchId === matchId);
+                        
+                        const leftText = leftItem.querySelector('span') ? leftItem.querySelector('span').textContent : '';
+                        const leftImg = leftItem.querySelector('img') ? leftItem.querySelector('img').src : '';
+                        const rightText = rightItem && rightItem.querySelector('span') ? rightItem.querySelector('span').textContent : '';
+                        const rightImg = rightItem && rightItem.querySelector('img') ? rightItem.querySelector('img').src : '';
+                        
+                        configHTML += `<div class="interactive-item">
+                                       <div class="form-group"><label>Left Item</label><input type="text" data-name="left" class="block-input" value="${escapeHtml(leftText)}"></div>
+                                       <div class="form-group"><label>Left Image (optional)</label><input type="url" data-name="leftImage" class="block-input" value="${leftImg}"></div>
+                                       <div class="form-group"><label>Right Item</label><input type="text" data-name="right" class="block-input" value="${escapeHtml(rightText)}"></div>
+                                       <div class="form-group"><label>Right Image (optional)</label><input type="url" data-name="rightImage" class="block-input" value="${rightImg}"></div>
+                                       <button class="remove-item-btn" onclick="this.parentElement.remove()">×</button></div>`;
+                    });
+                    
+                    configHTML += `</div><button class="add-item-btn" onclick="addInteractiveItem(this, 'matching')">+ Add Pair</button>`;
+                } else if (activityWrapper.querySelector('.accordion-container')) {
+                    interactiveType = 'accordion';
+                    const items = activityWrapper.querySelectorAll('.accordion-item');
+                    
+                    configHTML = `<div class="items-container" data-item-type="item">`;
+                    
+                    items.forEach(item => {
+                        const title = item.querySelector('.accordion-header') ? item.querySelector('.accordion-header').textContent : '';
+                        const contentEl = item.querySelector('.accordion-content p');
+                        const img = item.querySelector('.accordion-content img');
+                        
+                        configHTML += `<div class="interactive-item">
+                                       <div class="form-group"><label>Title</label><input type="text" data-name="title" class="block-input" value="${escapeHtml(title)}"></div>
+                                       <div class="form-group"><label>Content</label><textarea data-name="content" class="block-input" rows="3">${escapeHtml(contentEl ? contentEl.textContent : '')}</textarea></div>
+                                       <div class="form-group"><label>Image URL (optional)</label><input type="url" data-name="image" class="block-input" value="${img ? img.src : ''}"></div>
+                                       <button class="remove-item-btn" onclick="this.parentElement.remove()">×</button></div>`;
+                    });
+                    
+                    configHTML += `</div><button class="add-item-btn" onclick="addInteractiveItem(this, 'accordion')">+ Add Section</button>`;
+                } else if (activityWrapper.querySelector('.dragdrop-container')) {
+                    interactiveType = 'dragdrop';
+                    const dragContainer = activityWrapper.querySelector('.dragdrop-container');
+                    const instructions = dragContainer.querySelector('.dragdrop-instructions');
+                    const dropZones = dragContainer.querySelectorAll('.drop-zone');
+                    const dragItems = dragContainer.querySelectorAll('.drag-item');
+                    
+                    // Get categories from drop zones
+                    const categories = Array.from(dropZones).map(z => z.querySelector('h4') ? z.querySelector('h4').textContent : '').join(', ');
+                    
+                    configHTML = `<div class="form-group"><label>Instructions</label><input type="text" class="block-input" data-name="instructions" value="${escapeHtml(instructions ? instructions.textContent : '')}" placeholder="Drag items to the correct category."></div>
+                                  <div class="form-group"><label>Categories (comma-separated)</label><input type="text" class="block-input" data-name="categories" value="${escapeHtml(categories)}" placeholder="Category 1, Category 2"></div>
+                                  <hr><h6 style="margin-top:10px;">Draggable Items</h6>
+                                  <div class="items-container" data-item-type="item">`;
+                    
+                    dragItems.forEach(item => {
+                        const text = item.querySelector('span') ? item.querySelector('span').textContent : '';
+                        const category = item.dataset.category || '';
+                        const img = item.querySelector('img') ? item.querySelector('img').src : '';
+                        
+                        configHTML += `<div class="interactive-item">
+                                       <div class="form-group"><label>Item Text</label><input type="text" data-name="text" class="block-input" value="${escapeHtml(text)}"></div>
+                                       <div class="form-group"><label>Correct Category</label><input type="text" data-name="category" class="block-input" value="${escapeHtml(category)}"></div>
+                                       <div class="form-group"><label>Image URL (optional)</label><input type="url" data-name="image" class="block-input" value="${img}"></div>
+                                       <button class="remove-item-btn" onclick="this.parentElement.remove()">×</button></div>`;
+                    });
+                    
+                    configHTML += `</div><button class="add-item-btn" onclick="addInteractiveItem(this, 'dragdrop')">+ Add Item</button>`;
+                } else if (activityWrapper.querySelector('.process-container')) {
+                    interactiveType = 'process';
+                    const steps = activityWrapper.querySelectorAll('.process-step');
+                    
+                    configHTML = `<div class="items-container" data-item-type="step">`;
+                    
+                    steps.forEach(step => {
+                        const title = step.querySelector('.process-content h4') ? step.querySelector('.process-content h4').textContent : '';
+                        const desc = step.querySelector('.process-content p') ? step.querySelector('.process-content p').textContent : '';
+                        const img = step.querySelector('.process-content img') ? step.querySelector('.process-content img').src : '';
+                        
+                        configHTML += `<div class="interactive-item">
+                                       <div class="form-group"><label>Step Title</label><input type="text" data-name="title" class="block-input" value="${escapeHtml(title)}"></div>
+                                       <div class="form-group"><label>Description</label><textarea data-name="desc" class="block-input" rows="2">${escapeHtml(desc)}</textarea></div>
+                                       <div class="form-group"><label>Image URL (optional)</label><input type="url" data-name="image" class="block-input" value="${img}"></div>
+                                       <button class="remove-item-btn" onclick="this.parentElement.remove()">×</button></div>`;
+                    });
+                    
+                    configHTML += `</div><button class="add-item-btn" onclick="addInteractiveItem(this, 'process')">+ Add Step</button>`;
+                } else if (activityWrapper.querySelector('.scenario-container')) {
+                    interactiveType = 'scenario';
+                    const scenarioContainer = activityWrapper.querySelector('.scenario-container');
+                    const title = scenarioContainer.querySelector('h4') ? scenarioContainer.querySelector('h4').textContent : '';
+                    const text = scenarioContainer.querySelector('p') ? scenarioContainer.querySelector('p').textContent : '';
+                    const img = scenarioContainer.querySelector('img') ? scenarioContainer.querySelector('img').src : '';
+                    const choices = scenarioContainer.querySelectorAll('.scenario-choice');
+                    
+                    configHTML = `<div class="form-group"><label>Scenario Title</label><input type="text" class="block-input" data-name="title" value="${escapeHtml(title)}" placeholder="A day in the office..."></div>
+                                  <div class="form-group"><label>Scenario Text</label><textarea class="block-input" data-name="text" rows="4">${escapeHtml(text)}</textarea></div>
+                                  <div class="form-group"><label>Scenario Image URL (optional)</label><input type="url" class="block-input" data-name="image" value="${img}"></div>
+                                  <hr><h6 style="margin-top:10px;">Choices</h6>
+                                  <div class="items-container" data-item-type="choice">`;
+                    
+                    choices.forEach(choice => {
+                        configHTML += `<div class="interactive-item">
+                                       <div class="form-group"><label>Choice Text</label><input type="text" data-name="choice" class="block-input" value="${escapeHtml(choice.textContent)}"></div>
+                                       <button class="remove-item-btn" onclick="this.parentElement.remove()">×</button></div>`;
+                    });
+                    
+                    configHTML += `</div><button class="add-item-btn" onclick="addInteractiveItem(this, 'scenario')">+ Add Choice</button>`;
+                } else if (activityWrapper.querySelector('.timeline-container')) {
+                    interactiveType = 'timeline';
+                    const events = activityWrapper.querySelectorAll('.timeline-item');
+                    
+                    configHTML = `<div class="items-container" data-item-type="event">`;
+                    
+                    events.forEach(event => {
+                        const h3 = event.querySelector('.timeline-content h3');
+                        let date = '', title = '';
+                        if (h3) {
+                            const parts = h3.textContent.split(' - ');
+                            date = parts[0] || '';
+                            title = parts[1] || '';
+                        }
+                        const desc = event.querySelector('.timeline-content p') ? event.querySelector('.timeline-content p').textContent : '';
+                        const img = event.querySelector('.timeline-content img') ? event.querySelector('.timeline-content img').src : '';
+                        
+                        configHTML += `<div class="interactive-item">
+                                       <div class="form-group"><label>Date / Label</label><input type="text" data-name="date" class="block-input" value="${escapeHtml(date)}"></div>
+                                       <div class="form-group"><label>Title</label><input type="text" data-name="title" class="block-input" value="${escapeHtml(title)}"></div>
+                                       <div class="form-group"><label>Description</label><textarea data-name="desc" class="block-input" rows="2">${escapeHtml(desc)}</textarea></div>
+                                       <div class="form-group"><label>Image URL (optional)</label><input type="url" data-name="image" class="block-input" value="${img}"></div>
+                                       <button class="remove-item-btn" onclick="this.parentElement.remove()">×</button></div>`;
+                    });
+                    
+                    configHTML += `</div><button class="add-item-btn" onclick="addInteractiveItem(this, 'timeline')">+ Add Event</button>`;
+                } else if (activityWrapper.querySelector('.flashcard-container')) {
+                    interactiveType = 'flashcards';
+                    const cards = activityWrapper.querySelectorAll('.flashcard');
+                    
+                    configHTML = `<div class="items-container" data-item-type="card">`;
+                    
+                    cards.forEach(card => {
+                        const front = card.querySelector('.flashcard-front span') ? card.querySelector('.flashcard-front span').textContent : '';
+                        const frontImg = card.querySelector('.flashcard-front img') ? card.querySelector('.flashcard-front img').src : '';
+                        const back = card.querySelector('.flashcard-back span') ? card.querySelector('.flashcard-back span').textContent : '';
+                        const backImg = card.querySelector('.flashcard-back img') ? card.querySelector('.flashcard-back img').src : '';
+                        
+                        configHTML += `<div class="interactive-item">
+                                       <div class="form-group"><label>Front of Card</label><textarea data-name="front" class="block-input" rows="2">${escapeHtml(front)}</textarea></div>
+                                       <div class="form-group"><label>Front Image (optional)</label><input type="url" data-name="frontImage" class="block-input" value="${frontImg}"></div>
+                                       <div class="form-group"><label>Back of Card</label><textarea data-name="back" class="block-input" rows="2">${escapeHtml(back)}</textarea></div>
+                                       <div class="form-group"><label>Back Image (optional)</label><input type="url" data-name="backImage" class="block-input" value="${backImg}"></div>
+                                       <button class="remove-item-btn" onclick="this.parentElement.remove()">×</button></div>`;
+                    });
+                    
+                    configHTML += `</div><button class="add-item-btn" onclick="addInteractiveItem(this, 'flashcards')">+ Add Card</button>`;
+                }
+                
+                content = `<h5>Interactive Block</h5>
+                           <div class="form-group">
+                               <label>Activity Type</label>
+                               <select class="block-input" data-name="interactiveType" onchange="configureInteractiveBlock(this)">
+                                   <option value="" ${!interactiveType ? 'selected' : ''}>-- Select --</option>
+                                   <option value="matching" ${interactiveType === 'matching' ? 'selected' : ''}>Matching</option>
+                                   <option value="accordion" ${interactiveType === 'accordion' ? 'selected' : ''}>Accordion</option>
+                                   <option value="dragdrop" ${interactiveType === 'dragdrop' ? 'selected' : ''}>Drag & Drop</option>
+                                   <option value="process" ${interactiveType === 'process' ? 'selected' : ''}>Process Steps</option>
+                                   <option value="scenario" ${interactiveType === 'scenario' ? 'selected' : ''}>Scenario</option>
+                                   <option value="timeline" ${interactiveType === 'timeline' ? 'selected' : ''}>Timeline</option>
+                                   <option value="flashcards" ${interactiveType === 'flashcards' ? 'selected' : ''}>Flashcards</option>
+                               </select>
+                           </div>
+                           <div class="config-container interactive-config-container">${configHTML}</div>`;
+            } else if (wrapper.querySelector('.custom-embed-wrapper')) {
+                // Custom Embed Block
+                blockType = 'custom';
+                const iframe = wrapper.querySelector('iframe');
+                const embedWrapper = wrapper.querySelector('.custom-embed-wrapper');
+                const hasFullscreen = wrapper.querySelector('.fullscreen-btn') !== null;
+                const height = embedWrapper ? embedWrapper.style.height : '450px';
+                let size = 'medium';
+                if (height === '600px') size = 'large';
+                else if (height === '650px') size = 'full';
+                
+                content = `<h5>Custom Embed Block</h5>
+                           <div class="form-group">
+                               <label>Embed URL</label>
+                               <input type="url" class="block-input" data-name="embedUrl" value="${iframe ? iframe.src : ''}" placeholder="https://example.com/embed">
+                           </div>
+                           <div class="form-group">
+                               <label>Embed Size</label>
+                               <select class="block-input" data-name="size">
+                                   <option value="medium" ${size === 'medium' ? 'selected' : ''}>Medium</option>
+                                   <option value="large" ${size === 'large' ? 'selected' : ''}>Large</option>
+                                   <option value="full" ${size === 'full' ? 'selected' : ''}>Full Width</option>
+                               </select>
+                           </div>
+                           <label><input type="checkbox" class="block-input" data-name="fullscreen" ${hasFullscreen ? 'checked' : ''}> Allow Fullscreen</label>`;
+            }
+            
+            if (blockType) {
+                block.dataset.type = blockType;
+                block.innerHTML = content + `<div class="block-controls"><button onclick="moveBlock(this, 'up')">↑</button><button onclick="moveBlock(this, 'down')">↓</button><button onclick="removeBlock(this)">×</button></div>`;
+                container.appendChild(block);
+            }
+        }
+
+        function goToStep(stepNum) {
+            if (stepNum > currentStep && !validateStep(currentStep)) return;
+            
+            // Hide continue section if it's still visible
+            document.getElementById('continueSection').style.display = 'none';
+            document.getElementById('progressIndicatorContainer').style.display = 'flex';
+            
+            // Hide all sections first
+            document.querySelectorAll('.form-section').forEach(s => {
+                s.style.display = 'none';
+                s.classList.remove('active');
+            });
+            
+            // Show and activate the target section
+            const targetSection = document.getElementById('section' + stepNum);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+                targetSection.classList.add('active');
+            }
+            
+            // Handle completion section specially
+            if (document.getElementById('completionSection') && stepNum === totalSteps + 1) {
+                document.getElementById('completionSection').style.display = 'block';
+                document.getElementById('completionSection').classList.add('active');
+            }
+            
+            currentStep = stepNum;
+            updateProgressIndicator();
+            
+            if (stepNum === 15) {
+                updateFinalSummary();
+            }
+        }
+        
+        function validateStep(step) {
+            let isValid = true;
+            if (step === 1 && !document.getElementById('courseName').value) isValid = false;
+            if (step === 2 && (!document.getElementById('moduleName').value || !document.getElementById('lessonName').value)) isValid = false;
+            if (step === 3 && (!document.getElementById('currentLesson').value || !document.getElementById('totalLessons').value)) isValid = false;
+            if (!isValid) alert('Please fill in all required fields.');
+            return isValid;
+        }
+
+        function updateProgressIndicator() {
+            for (let i = 1; i <= totalSteps + 1; i++) {
+                const stepEl = document.getElementById('step' + i);
+                if (stepEl) {
+                    if (i < currentStep) {
+                        stepEl.classList.add('completed');
+                        stepEl.classList.remove('active');
+                    } else if (i === currentStep) {
+                        stepEl.classList.add('active');
+                        stepEl.classList.remove('completed');
+                    } else {
+                        stepEl.classList.remove('active', 'completed');
+                    }
+                }
+            }
+        }
+        
+        function openAddBlockModal() { document.getElementById('addBlockModal').style.display = 'flex'; }
+        function closeAddBlockModal() { document.getElementById('addBlockModal').style.display = 'none'; }
+
+        function addBlock(type) {
+            const activeSection = document.querySelector('.form-section.active');
+            if (!activeSection) return;
+            const blockContainer = activeSection.querySelector('.block-container');
+            
+            const initialBtn = blockContainer.querySelector('.add-block-center-btn');
+            if (initialBtn) initialBtn.remove();
+            
+            const block = document.createElement('div');
+            block.className = 'content-block';
+            block.dataset.type = type;
+            let content = '';
+
+            switch (type) {
+                case 'title_text':
+                    content = `<h5>Title & Text Block</h5>
+                               <div class="form-group">
+                                   <label>Title</label>
+                                   <input type="text" class="block-input" data-name="title">
+                               </div>
+                               <div class="form-group">
+                                   <label>Text</label>
+                                   <div class="text-editor-toolbar">
+                                       <button type="button" onmousedown="event.preventDefault(); formatDoc('bold')"><b>B</b></button>
+                                       <button type="button" onmousedown="event.preventDefault(); formatDoc('italic')"><i>I</i></button>
+                                       <button type="button" onmousedown="event.preventDefault(); formatDoc('underline')"><u>U</u></button>
+                                       <button type="button" onmousedown="event.preventDefault(); formatDoc('insertUnorderedList')">•</button>
+                                   </div>
+                                   <div class="text-editor-content block-input" data-name="htmlContent" contenteditable="true"></div>
+                               </div>
+                               <div class="form-group">
+                                   <label>Background Image URL (optional)</label>
+                                   <input type="url" class="block-input" data-name="bgImage">
+                               </div>
+                               <div class="form-group">
+                                   <label>Voiceover Audio URL (optional)</label>
+                                   <input type="url" class="block-input" data-name="voiceoverUrl" placeholder="https://example.com/audio.mp3">
+                               </div>`;
+                    break;
+                case 'text': 
+                    content = `<h5>Text Block</h5>
+                               <div class="form-group">
+                                   <label>Text</label>
+                                   <div class="text-editor-toolbar">
+                                       <button type="button" onmousedown="event.preventDefault(); formatDoc('bold')"><b>B</b></button>
+                                       <button type="button" onmousedown="event.preventDefault(); formatDoc('italic')"><i>I</i></button>
+                                       <button type="button" onmousedown="event.preventDefault(); formatDoc('underline')"><u>U</u></button>
+                                       <button type="button" onmousedown="event.preventDefault(); formatDoc('insertUnorderedList')">•</button>
+                                   </div>
+                                   <div class="text-editor-content block-input" data-name="htmlContent" contenteditable="true"></div>
+                               </div>
+                               <div class="form-group">
+                                   <label>Voiceover Audio URL (optional)</label>
+                                   <input type="url" class="block-input" data-name="voiceoverUrl" placeholder="https://example.com/audio.mp3">
+                               </div>`;
+                    break;
+                case 'image': content = `<h5>Image Block</h5><div class="form-group"><label>Image URL</label><input type="url" class="block-input" data-name="src" placeholder="https://example.com/image.png"></div><div class="form-group"><label>Image Size</label><select class="block-input" data-name="size"><option value="medium">Medium (50%)</option><option value="large">Large (75%)</option><option value="full">Full Width (100%)</option></select></div>`; break;
+                case 'feedback': content = `<h5>Feedback Textbox</h5><div class="form-group"><label>Instruction Text</label><input type="text" class="block-input" data-name="instruction" value="Test Your Recall:"></div><textarea readonly disabled placeholder="Student will type here..."></textarea>`; break;
+                case 'custom': content = `<h5>Custom Embed Block</h5><div class="form-group"><label>Embed URL</label><input type="url" class="block-input" data-name="embedUrl" placeholder="https://example.com/embed"></div><div class="form-group"><label>Embed Size</label><select class="block-input" data-name="size"><option value="medium">Medium</option><option value="large">Large</option><option value="full">Full Width</option></select></div><label><input type="checkbox" class="block-input" data-name="fullscreen"> Allow Fullscreen</label>`; break;
+                case 'interactive': content = `<h5>Interactive Block</h5><div class="form-group"><label>Activity Type</label><select class="block-input" data-name="interactiveType" onchange="configureInteractiveBlock(this)"><option value="">-- Select --</option><option value="matching">Matching</option><option value="accordion">Accordion</option><option value="dragdrop">Drag & Drop</option><option value="process">Process Steps</option><option value="scenario">Scenario</option><option value="timeline">Timeline</option><option value="flashcards">Flashcards</option></select></div><div class="config-container interactive-config-container"></div>`; break;
+                case 'quiz': content = `<h5>Quiz Block</h5><div class="form-group"><label>Quiz Introduction (optional)</label><input type="text" class="block-input" data-name="intro" placeholder="Check your understanding..."></div><div class="config-container quiz-config-container"><div class="items-container" data-item-type="question"></div><button class="add-item-btn" onclick="addQuizQuestionItem(this)">+ Add Question</button></div>`; break;
+            }
+            
+            block.innerHTML = content + `<div class="block-controls"><button onclick="moveBlock(this, 'up')">↑</button><button onclick="moveBlock(this, 'down')">↓</button><button onclick="removeBlock(this)">×</button></div>`;
+            blockContainer.appendChild(block);
+            
+            const newAddButton = document.createElement('button');
+            newAddButton.className = 'add-block-center-btn';
+            newAddButton.style.marginTop = '15px';
+            newAddButton.innerHTML = `<span style="font-size: 24px; margin-right: 10px;">+</span> Add Another Block`;
+            newAddButton.onclick = openAddBlockModal;
+            const existingAddButton = blockContainer.querySelector('.add-block-center-btn');
+            if (existingAddButton) existingAddButton.remove();
+            blockContainer.appendChild(newAddButton);
+            closeAddBlockModal();
+        }
+        
+        function updateFinalSummary() {
+            const summaryContainer = document.getElementById('finalSummaryPreview');
+            const sectionsData = gatherAllSectionsData();
+            let html = '<h4>Module Content Summary:</h4><ul>';
+            let totalBlocks = 0;
+            Object.keys(sectionsData).forEach(key => {
+                const blockCount = sectionsData[key].length;
+                if (blockCount > 0) {
+                    html += `<li><strong>${moduleSections[key]}:</strong> ${blockCount} content block(s)</li>`;
+                    totalBlocks += blockCount;
+                }
+            });
+            if (totalBlocks === 0) {
+                html += '<li>No content blocks have been added yet.</li>';
+            }
+            html += '</ul>';
+            summaryContainer.innerHTML = html;
+        }
+
+        function configureInteractiveBlock(select) { 
+            const container = select.closest('.content-block').querySelector('.interactive-config-container'); 
+            const type = select.value; 
+            let configHtml = ''; 
+            switch (type) { 
+                case 'matching': configHtml = getMatchingConfigHtml(); break; 
+                case 'accordion': configHtml = getAccordionConfigHtml(); break; 
+                case 'dragdrop': configHtml = getDragDropConfigHtml(); break; 
+                case 'process': configHtml = getProcessConfigHtml(); break; 
+                case 'scenario': configHtml = getScenarioConfigHtml(); break; 
+                case 'timeline': configHtml = getTimelineConfigHtml(); break; 
+                case 'flashcards': configHtml = getFlashcardsConfigHtml(); break; 
+            } 
+            container.innerHTML = configHtml; 
+        }
+        
+        function getMatchingConfigHtml() { return `<div class="form-group"><label>Instructions</label><input type="text" class="block-input" data-name="instructions" placeholder="Match the terms to their definitions."></div><div class="items-container" data-item-type="pair"></div><button class="add-item-btn" onclick="addInteractiveItem(this, 'matching')">+ Add Pair</button>`; }
+        function getAccordionConfigHtml() { return `<div class="items-container" data-item-type="item"></div><button class="add-item-btn" onclick="addInteractiveItem(this, 'accordion')">+ Add Section</button>`; }
+        function getDragDropConfigHtml() { return `<div class="form-group"><label>Instructions</label><input type="text" class="block-input" data-name="instructions" placeholder="Drag items to the correct category."></div><div class="form-group"><label>Categories (comma-separated)</label><input type="text" class="block-input" data-name="categories" placeholder="Category 1, Category 2"></div><hr><h6 style="margin-top:10px;">Draggable Items</h6><div class="items-container" data-item-type="item"></div><button class="add-item-btn" onclick="addInteractiveItem(this, 'dragdrop')">+ Add Item</button>`; }
+        function getProcessConfigHtml() { return `<div class="items-container" data-item-type="step"></div><button class="add-item-btn" onclick="addInteractiveItem(this, 'process')">+ Add Step</button>`; }
+        function getScenarioConfigHtml() { return `<div class="form-group"><label>Scenario Title</label><input type="text" class="block-input" data-name="title" placeholder="A day in the office..."></div><div class="form-group"><label>Scenario Text</label><textarea class="block-input" data-name="text" rows="4"></textarea></div><div class="form-group"><label>Scenario Image URL (optional)</label><input type="url" class="block-input" data-name="image"></div><hr><h6 style="margin-top:10px;">Choices</h6><div class="items-container" data-item-type="choice"></div><button class="add-item-btn" onclick="addInteractiveItem(this, 'scenario')">+ Add Choice</button>`; }
+        function getTimelineConfigHtml() { return `<div class="items-container" data-item-type="event"></div><button class="add-item-btn" onclick="addInteractiveItem(this, 'timeline')">+ Add Event</button>`; }
+        function getFlashcardsConfigHtml() { return `<div class="items-container" data-item-type="card"></div><button class="add-item-btn" onclick="addInteractiveItem(this, 'flashcards')">+ Add Card</button>`; }
+        
+        function addInteractiveItem(btn, type) { 
+            const container = btn.previousElementSibling; 
+            const item = document.createElement('div'); 
+            item.className = 'interactive-item'; 
+            let itemHtml = ''; 
+            switch (type) { 
+                case 'matching': itemHtml = `<div class="form-group"><label>Left Item</label><input type="text" data-name="left" class="block-input"></div><div class="form-group"><label>Left Image (optional)</label><input type="url" data-name="leftImage" class="block-input"></div><div class="form-group"><label>Right Item</label><input type="text" data-name="right" class="block-input"></div><div class="form-group"><label>Right Image (optional)</label><input type="url" data-name="rightImage" class="block-input"></div>`; break; 
+                case 'accordion': itemHtml = `<div class="form-group"><label>Title</label><input type="text" data-name="title" class="block-input"></div><div class="form-group"><label>Content</label><textarea data-name="content" class="block-input" rows="3"></textarea></div><div class="form-group"><label>Image URL (optional)</label><input type="url" data-name="image" class="block-input"></div>`; break; 
+                case 'dragdrop': itemHtml = `<div class="form-group"><label>Item Text</label><input type="text" data-name="text" class="block-input"></div><div class="form-group"><label>Correct Category</label><input type="text" data-name="category" class="block-input"></div><div class="form-group"><label>Image URL (optional)</label><input type="url" data-name="image" class="block-input"></div>`; break; 
+                case 'process': itemHtml = `<div class="form-group"><label>Step Title</label><input type="text" data-name="title" class="block-input"></div><div class="form-group"><label>Description</label><textarea data-name="desc" class="block-input" rows="2"></textarea></div><div class="form-group"><label>Image URL (optional)</label><input type="url" data-name="image" class="block-input"></div>`; break; 
+                case 'scenario': itemHtml = `<div class="form-group"><label>Choice Text</label><input type="text" data-name="choice" class="block-input"></div>`; break; 
+                case 'timeline': itemHtml = `<div class="form-group"><label>Date / Label</label><input type="text" data-name="date" class="block-input"></div><div class="form-group"><label>Title</label><input type="text" data-name="title" class="block-input"></div><div class="form-group"><label>Description</label><textarea data-name="desc" class="block-input" rows="2"></textarea></div><div class="form-group"><label>Image URL (optional)</label><input type="url" data-name="image" class="block-input"></div>`; break; 
+                case 'flashcards': itemHtml = `<div class="form-group"><label>Front of Card</label><textarea data-name="front" class="block-input" rows="2"></textarea></div><div class="form-group"><label>Front Image (optional)</label><input type="url" data-name="frontImage" class="block-input"></div><div class="form-group"><label>Back of Card</label><textarea data-name="back" class="block-input" rows="2"></textarea></div><div class="form-group"><label>Back Image (optional)</label><input type="url" data-name="backImage" class="block-input"></div>`; break; 
+            } 
+            item.innerHTML = itemHtml + `<button class="remove-item-btn" onclick="this.parentElement.remove()">×</button>`; 
+            container.appendChild(item); 
+        }
+        
+        function addQuizQuestionItem(btn) { 
+            const container = btn.previousElementSibling; 
+            const item = document.createElement('div'); 
+            item.className = 'quiz-question-item'; 
+            item.innerHTML = `<div class="form-group"><label>Question</label><input type="text" data-name="question" class="block-input"></div><div class="form-group"><label>Option A</label><input type="text" data-name="optA" class="block-input"></div><div class="form-group"><label>Option B</label><input type="text" data-name="optB" class="block-input"></div><div class="form-group"><label>Option C</label><input type="text" data-name="optC" class="block-input"></div><div class="form-group"><label>Option D</label><input type="text" data-name="optD" class="block-input"></div><div class="form-group"><label>Correct Answer</label><select data-name="correct" class="block-input"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div><div class="form-group"><label>Correct Feedback</label><textarea data-name="correctFeedback" class="block-input" rows="2" placeholder="Well done!"></textarea></div><div class="form-group"><label>Incorrect Feedback</label><textarea data-name="incorrectFeedback" class="block-input" rows="2" placeholder="Not quite, the correct answer is..."></textarea></div><button class="remove-item-btn" onclick="this.parentElement.remove()">×</button>`; 
+            container.appendChild(item); 
+        }
+        
+        function formatDoc(command, value = null) { document.execCommand(command, false, value); }
+        function removeBlock(btn) { const block = btn.closest('.content-block'); const container = block.parentElement; block.remove(); if (container.querySelectorAll('.content-block').length === 0) { container.innerHTML = `<button class="add-block-center-btn" onclick="openAddBlockModal()"><span style="font-size: 24px; margin-right: 10px;">+</span> Add First Block</button>`; } }
+        function moveBlock(btn, direction) { const block = btn.closest('.content-block'); const container = block.parentElement; if (direction === 'up') { if (block.previousElementSibling) container.insertBefore(block, block.previousElementSibling); } else { if (block.nextElementSibling && block.nextElementSibling.classList.contains('content-block')) container.insertBefore(block, block.nextElementSibling.nextElementSibling); } }
+        
+        // --- HTML GENERATION ---
+        let generatedHTML = '';
+
+        function gatherAllSectionsData() {
+            const allSectionsData = {};
+            Object.keys(moduleSections).forEach((key, index) => {
+                const sectionId = `section${index + 4}`;
+                const sectionEl = document.getElementById(sectionId);
+                const blocksData = [];
+                if(sectionEl) {
+                    sectionEl.querySelectorAll('.block-container .content-block').forEach(block => {
+                        const blockData = { type: block.dataset.type, values: {} };
+                        block.querySelectorAll(':scope .block-input, :scope > label > .block-input').forEach(input => { 
+                            const name = input.dataset.name; 
+                            if (!name) return; 
+                            let value = input.type === 'checkbox' ? input.checked : (input.hasAttribute('contenteditable') ? input.innerHTML : input.value); 
+                            blockData.values[name] = value; 
+                        });
+                        if (block.dataset.type === 'interactive') { 
+                            const itemsContainer = block.querySelector('.items-container'); 
+                            if (itemsContainer) { 
+                                blockData.values.items = []; 
+                                itemsContainer.querySelectorAll('.interactive-item').forEach(item => { 
+                                    const itemData = {}; 
+                                    item.querySelectorAll('.block-input').forEach(input => { 
+                                        itemData[input.dataset.name] = input.value; 
+                                    }); 
+                                    blockData.values.items.push(itemData); 
+                                }); 
+                            } 
+                            block.querySelector('.config-container').querySelectorAll(':scope > .form-group .block-input').forEach(input => { 
+                                blockData.values[input.dataset.name] = input.value; 
+                            }); 
+                        } else if (block.dataset.type === 'quiz') { 
+                            const itemsContainer = block.querySelector('.items-container'); 
+                            blockData.values.questions = []; 
+                            itemsContainer.querySelectorAll('.quiz-question-item').forEach(item => { 
+                                const questionData = {}; 
+                                item.querySelectorAll('.block-input').forEach(input => { 
+                                    questionData[input.dataset.name] = input.value; 
+                                }); 
+                                blockData.values.questions.push(questionData); 
+                            }); 
+                        }
+                        blocksData.push(blockData);
+                    });
+                }
+                allSectionsData[key] = blocksData;
+            });
+            return allSectionsData;
+        }
+
+        // PREVIEW FUNCTION
+        function doPreview() {
+            // Gather current data, using defaults for empty fields
+            const previewData = {
+                courseName: document.getElementById('courseName').value || 'Course Name',
+                moduleName: document.getElementById('moduleName').value || 'Module Name', 
+                lessonName: document.getElementById('lessonName').value || 'Lesson Name',
+                currentLesson: document.getElementById('currentLesson').value || '1',
+                totalLessons: document.getElementById('totalLessons').value || '1',
+                sectionsData: gatherAllSectionsData()
+            };
+            
+            const previewHTML = buildCompleteHTML(previewData);
+            
+            // Try to open preview window
+            const previewWindow = window.open('', 'Module Preview', 'width=1200,height=800');
+            if (previewWindow) {
+                previewWindow.document.open();
+                previewWindow.document.write(previewHTML);
+                previewWindow.document.close();
+            } else {
+                // Fallback if popup is blocked
+                alert('Popup blocked! Please allow popups for this site to use the preview feature.\n\nAlternatively, you can generate the HTML and open it manually.');
+            }
+        }
+
+        function generateFinalHTML() {
+            generatedHTML = buildCompleteHTML({
+                courseName: document.getElementById('courseName').value,
+                moduleName: document.getElementById('moduleName').value,
+                lessonName: document.getElementById('lessonName').value,
+                currentLesson: document.getElementById('currentLesson').value,
+                totalLessons: document.getElementById('totalLessons').value,
+                sectionsData: gatherAllSectionsData()
+            });
+            goToStep(16);
+        }
+
+        function buildCompleteHTML(data) {
+            const { courseName, moduleName, lessonName, currentLesson, totalLessons, sectionsData } = data;
+            
+            let sidebarHTML = '';
+            let mainContentHTML = '';
+            let isFirstActiveSet = false;
+            
+            Object.keys(sectionsData).forEach((key) => {
+                const sectionHasContent = sectionsData[key].length > 0;
+                if (!sectionHasContent) return; 
+
+                let navClass = 'nav-item';
+                let sectionClass = 'section';
+                if (!isFirstActiveSet) {
+                    navClass += ' active';
+                    sectionClass += ' active';
+                    isFirstActiveSet = true;
+                }
+
+                sidebarHTML += `<div class="${navClass}" id="nav-${key}" onclick="showSection('${key}')"><span class="checkmark">✓</span>${moduleSections[key]}</div>`;
+                
+                let blocksHTML = '';
+                sectionsData[key].forEach(block => {
+                    let voiceoverHTML = '';
+                    if (block.values.voiceoverUrl) {
+                        voiceoverHTML = `<button class="voiceover-btn" onclick="toggleVoiceoverMute(this)">
+                            <svg class="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                            <svg class="icon-sound-off" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="1" x2="1" y2="23"></line></svg>
+                        </button>`;
+                    }
+                    
+                    const blockWrapperStart = `<div class="section-content-wrapper" ${block.values.voiceoverUrl ? `data-audio-src="${block.values.voiceoverUrl}"` : ''}>${voiceoverHTML}`;
+                    const blockWrapperEnd = `</div>`;
+
+                    switch(block.type) {
+                        case 'title_text': blocksHTML += `${blockWrapperStart}<div style="position: relative; margin: 20px 0; padding: 0;">${block.values.bgImage ? `<div class="definition-background-image"><img src="${block.values.bgImage}" alt=""></div>` : ''}<div class="key-definition-box"><h4>${block.values.title ? block.values.title.toUpperCase() : ''}</h4><div>${block.values.htmlContent || ''}</div></div></div>${blockWrapperEnd}`; break;
+                        case 'text': blocksHTML += `${blockWrapperStart}<div class="text-content-render">${block.values.htmlContent || ''}</div>${blockWrapperEnd}`; break;
+                        case 'image': const sizeMap = { medium: '50%', large: '75%', full: '100%' }; blocksHTML += `<div class="section-content-wrapper"><img src="${block.values.src || ''}" class="content-image" style="width: ${sizeMap[block.values.size] || '100%'};"></div>`; break;
+                        case 'feedback': blocksHTML += `<div class="section-content-wrapper"><div class="feedback-box-render"><h4>${block.values.instruction || 'Feedback'}</h4><textarea placeholder="Type your response here..."></textarea></div></div>`; break;
+                        case 'custom':
+                            const embedSizeMap = { medium: '450px', large: '600px', full: '650px' };
+                            const embedHeight = embedSizeMap[block.values.size] || '450px';
+                            const embedId = `embed-${Math.random().toString(36).substr(2, 9)}`;
+                            let fullscreenBtnHTML = '';
+                            if (block.values.fullscreen) {
+                                fullscreenBtnHTML = `<button class="fullscreen-btn" onclick="toggleFullscreen('${embedId}')">⛶ Fullscreen</button>`;
+                            }
+                            blocksHTML += `
+                                <div class="section-content-wrapper">
+                                    <div class="custom-embed-wrapper" id="${embedId}" style="height: ${embedHeight};">
+                                        ${fullscreenBtnHTML}
+                                        <iframe src="${block.values.embedUrl || ''}" allowfullscreen="true" allow="fullscreen"></iframe>
+                                    </div>
+                                </div>`;
+                            break;
+                        case 'interactive': blocksHTML += `<div class="section-content-wrapper">${generateInteractiveActivityHTML(block.values)}</div>`; break;
+                        case 'quiz': blocksHTML += `<div class="section-content-wrapper">${generateQuizActivityHTML(block.values)}</div>`; break;
+                    }
+                });
+
+                mainContentHTML += `
+                    <div class="${sectionClass}" id="${key}">
+                        <div class="section-header"><h3>${moduleSections[key]}</h3></div>
+                        <div class="section-content">${blocksHTML}</div>
+                        <div class="navigation-buttons">
+                            <button class="nav-btn" onclick="previousSection()">Previous</button>
+                            <button class="nav-btn next" onclick="nextSection()">Continue</button>
+                        </div>
+                    </div>
+                `;
+            });
+            const progressPercent = Math.round((parseInt(currentLesson) / parseInt(totalLessons)) * 100) || 0;
+
+            return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${moduleName}</title><style>${getModuleStyles()}</style></head><body><div class="main-layout"><div class="sidebar-container"><div class="sidebar-header"><h2>${courseName.toUpperCase()}</h2><div class="progress-container"><div class="progress-bar"><div class="progress-fill" style="width: 0%;"></div></div><span class="progress-text">0% COMPLETE</span></div></div><div class="nav-items">${sidebarHTML}</div></div><div class="content-container"><div class="content-header"><div class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</div><div class="content-title"><h1>${moduleName.toUpperCase()} - ${lessonName.toUpperCase()}</h1><div class="lesson-info">Lesson ${currentLesson} of ${totalLessons}</div><h2>${moduleName.toUpperCase()}</h2></div><div class="logo-placeholder"><img src="https://i.postimg.cc/9FkZdTvQ/taa-circles-only-no-TAA-png.png" alt="TAA Logo"></div></div><div class="main-content">${mainContentHTML}</div></div></div><div class="mobile-overlay" onclick="toggleMobileMenu()"></div><script>${getModuleScript()}<\/script></body></html>`;
+        }
+
+        function generateInteractiveActivityHTML(data) { 
+            let activityHTML = ''; 
+            const id = `interactive-${Math.random().toString(36).substr(2, 9)}`; 
+            switch (data.interactiveType) { 
+                case 'accordion': activityHTML = `<div class="accordion-container">${(data.items || []).map(item => `<div class="accordion-item"><div class="accordion-header">${item.title}</div><div class="accordion-content"><p>${item.content}</p>${item.image ? `<img src="${item.image}" class="interactive-item-image">` : ''}</div></div>`).join('')}</div>`; break; 
+                case 'flashcards': activityHTML = `<div class="flashcard-container">${(data.items || []).map(item => `<div class="flashcard"><div class="flashcard-inner"><div class="flashcard-front">${item.frontImage ? `<img src="${item.frontImage}" class="interactive-item-image">` : ''}<span>${item.front}</span></div><div class="flashcard-back">${item.backImage ? `<img src="${item.backImage}" class="interactive-item-image">` : ''}<span>${item.back}</span></div></div></div>`).join('')}</div>`; break; 
+                case 'timeline': activityHTML = `<div class="timeline-container">${(data.items || []).map(item => `<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><h3>${item.date} - ${item.title}</h3><p>${item.desc}</p>${item.image ? `<img src="${item.image}" class="interactive-item-image">` : ''}</div></div>`).join('')}</div>`; break; 
+                case 'process': activityHTML = `<div class="process-container">${(data.items || []).map((item, i) => `<div class="process-step"><div class="process-number">${i+1}</div><div class="process-content"><h4>${item.title}</h4><p>${item.desc}</p>${item.image ? `<img src="${item.image}" class="interactive-item-image small">` : ''}</div></div>`).join('')}</div>`; break; 
+                case 'scenario': activityHTML = `<div class="scenario-container"><h4>${data.title}</h4>${data.image ? `<img src="${data.image}" class="interactive-item-image">` : ''}<p>${data.text}</p><div class="scenario-choices">${(data.items || []).map(item => `<button class="scenario-choice">${item.choice}</button>`).join('')}</div></div>`; break; 
+                case 'dragdrop': const itemsShuffled = [...(data.items || [])].sort(() => Math.random() - 0.5); activityHTML = `<div class="dragdrop-container" id="${id}"><p class="dragdrop-instructions">${data.instructions || ''}</p><div class="drag-items">${itemsShuffled.map(item => `<div class="drag-item" draggable="true" data-category="${item.category}">${item.image ? `<img src="${item.image}" alt="">` : ''}<span>${item.text}</span></div>`).join('')}</div><div class="drop-zones">${(data.categories || '').split(',').map(cat => `<div class="drop-zone" data-category="${cat.trim()}"><h4>${cat.trim()}</h4></div>`).join('')}</div><div class="dragdrop-feedback"></div><button class="dragdrop-reset-btn">Reset</button></div>`; break; 
+                case 'matching': const leftItems = (data.items || []); const rightItems = [...leftItems].sort(() => Math.random() - 0.5); activityHTML = `<div class="matching-container" id="${id}"><p class="matching-instructions">${data.instructions || ''}</p><div class="matching-columns"><div class="matching-column">${leftItems.map((item, i) => `<div class="matching-item" data-match-id="${i}">${item.leftImage ? `<img src="${item.leftImage}" class="interactive-item-image small">` : ''}<span>${item.left}</span></div>`).join('')}</div><div class="matching-column">${rightItems.map((item, i) => `<div class="matching-item" data-match-id="${leftItems.findIndex(orig => orig.right === item.right)}">${item.rightImage ? `<img src="${item.rightImage}" class="interactive-item-image small">` : ''}<span>${item.right}</span></div>`).join('')}</div></div><div class="matching-feedback"></div></div>`; break; 
+            } 
+            return `<div class="interactive-activity-wrapper">${activityHTML}</div>`; 
+        }
+        
+        function generateQuizActivityHTML(data) { 
+            const id = `quiz-${Math.random().toString(36).substr(2, 9)}`; 
+            let quizHTML = `<div class="quiz-container" id="${id}">`; 
+            if (data.intro) { 
+                quizHTML += `<p class="quiz-intro">${data.intro}</p>`; 
+            } 
+            (data.questions || []).forEach((q, index) => { 
+                quizHTML += `<div class="quiz-question-wrapper" style="${index > 0 ? 'display:none;' : ''}" data-question-index="${index}"><h4 class="quiz-question-text">Q${index + 1}: ${q.question}</h4><div class="quiz-options"><div class="quiz-option" data-value="A"><span>A</span><p>${q.optA}</p></div><div class="quiz-option" data-value="B"><span>B</span><p>${q.optB}</p></div><div class="quiz-option" data-value="C"><span>C</span><p>${q.optC}</p></div><div class="quiz-option" data-value="D"><span>D</span><p>${q.optD}</p></div></div><div class="quiz-feedback-wrapper"><div class="quiz-feedback correct"><p><strong>Correct!</strong> ${q.correctFeedback}</p></div><div class="quiz-feedback incorrect"><p><strong>Incorrect.</strong> ${q.incorrectFeedback}</p></div></div><div class="quiz-nav"><button class="quiz-check-btn" onclick="checkQuizAnswer(this, '${q.correct}')">Check Answer</button><button class="quiz-next-btn" style="display:none;" onclick="nextQuizQuestion(this)">Next Question</button></div></div>`; 
+            }); 
+            quizHTML += `<div class="quiz-summary" style="display:none;"><h4>Quiz Complete!</h4><p>Your score: <span class="quiz-score">0</span>/${(data.questions || []).length}</p></div>`; 
+            quizHTML += `</div>`; 
+            return quizHTML; 
+        }
+        
+        function getModuleStyles() { 
+            return `:root { --primary-color: #667eea; --primary-dark: #5a67d8; --success-color: #4ade80; --warning-color: #ffa500; --danger-color: #f87171; --light-gray: #f8f9fa; --medium-gray: #e0e0e0; --dark-blue: #2b3d6d; --text-color: #333; } * { margin: 0; padding: 0; box-sizing: border-box; } html, body { height: 100%; overflow-x: hidden; } body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; } .main-layout { display: flex; max-width: 1280px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); background: white; min-height: 100vh; } .sidebar-container { width: 280px; background: #2b3d6d; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease-in-out; } .sidebar-header { background: #1e2d54; padding: 30px 20px 20px; color: white; } .sidebar-header h2 { font-size: 24px; font-weight: 600; margin-bottom: 15px; letter-spacing: 1px; } .progress-container { display: flex; align-items: center; gap: 10px; } .progress-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; } .progress-fill { height: 100%; background: #ffa500; border-radius: 3px; transition: width 0.5s ease; } .progress-text { font-size: 12px; color: rgba(255,255,255,0.9); white-space: nowrap; } .nav-items { padding: 20px; overflow-y: auto; flex: 1; } .nav-item { padding: 12px 16px 12px 35px; margin: 8px 0; border-radius: 6px; cursor: pointer; font-size: 14px; color: rgba(255,255,255,0.8); position: relative; } .nav-item:hover { background: rgba(255,255,255,0.1); color: white; } .nav-item.active { background: rgba(255,165,0,0.2); color: white; font-weight: 500; border-left: 3px solid #ffa500; padding-left: 32px; } .nav-item .checkmark { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--success-color); font-weight: bold; font-size: 18px; opacity: 0; transition: opacity 0.3s ease; } .nav-item.completed .checkmark { opacity: 1; } .content-container { flex: 1; display: flex; flex-direction: column; overflow-y: auto; } .content-header { background: #f8f9fa; padding: 25px 40px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; gap: 20px; } .mobile-menu-btn { display: none; font-size: 24px; cursor: pointer; } .content-title { flex: 1; } .content-title h1 { font-size: 14px; color: #666; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; } .content-title h2 { font-size: 48px; color: #2b3d6d; font-weight: 700; } .content-title .lesson-info { font-size: 14px; color: #666; margin-bottom: 5px; } .logo-placeholder { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; } .logo-placeholder img { width: 100%; height: 100%; object-fit: contain; } .main-content { padding: 40px; } .section { display: none; } .section.active { display: block; } .section-header { margin-bottom: 30px; } .section-header h3 { font-size: 28px; color: #2b3d6d; padding-bottom: 10px; border-bottom: 2px solid #e0e0e0; } .section-content-wrapper { position: relative; margin-bottom: 20px; } .section-content { font-size: 16px; line-height: 1.8; color: #555; } .content-image { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; display: block; margin-left: auto; margin-right: auto; } .definition-background-image { position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px; border-radius: 12px; overflow: hidden; z-index: 1; } .definition-background-image img { width: 100%; height: 100%; object-fit: cover; opacity: 0.2; } .key-definition-box { background: rgba(255,255,255,0.8); border: 1px solid #e0e0e0; padding: 25px; border-radius: 8px; position: relative; z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } .key-definition-box h4 { color: #2b3d6d; margin-bottom: 15px; font-size: 20px; font-weight: 600; } .key-definition-box div { color: #000; line-height: 1.8; font-size: 16px; } .feedback-box-render, .interactive-activity-wrapper, .quiz-container { background: #f8f9fa; padding: 25px; border-radius: 12px; margin: 20px 0; border: 1px solid #e0e0e0; } .feedback-box-render h4 { color: #2b3d6d; } .feedback-box-render textarea { width: 100%; min-height: 120px; margin-top: 10px; border-radius: 8px; border: 2px solid #ccc; padding: 10px; font-size: 16px; transition: border-color 0.3s; } .feedback-box-render textarea:focus { border-color: var(--warning-color); outline: none; } .custom-embed-wrapper { position: relative; width: 100%; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; } .custom-embed-wrapper iframe { width: 100%; height: 100%; border: none; } .fullscreen-btn { position: absolute; top: 10px; right: 10px; z-index: 10; padding: 5px 10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 5px; cursor: pointer; opacity: 0.7; transition: opacity 0.3s; } .fullscreen-btn:hover { opacity: 1; } .voiceover-btn { position: absolute; top: 15px; right: 15px; background: #fff; border: 1px solid #ccc; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 5; } .voiceover-btn svg { width: 20px; height: 20px; stroke: #555; } .accordion-item { border-bottom: 1px solid #e0e0e0; } .accordion-item:last-child { border-bottom: none; } .accordion-header { padding: 15px; cursor: pointer; font-weight: 600; background: #fff; } .accordion-header:hover { background: #f0f4ff; } .accordion-content { display: none; padding: 15px; background: #fff; } .flashcard-container { display: flex; flex-wrap: wrap; gap: 20px; } .flashcard { background-color: transparent; width: 250px; height: 180px; perspective: 1000px; cursor: pointer; } .flashcard-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2); } .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); } .flashcard-front, .flashcard-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; border-radius: 8px; gap: 10px; } .flashcard-front { background-color: #667eea; color: white; } .flashcard-back { background-color: white; color: black; transform: rotateY(180deg); border: 1px solid #ccc; } .timeline-container { position: relative; padding: 20px 0; } .timeline-container::before { content: ''; position: absolute; left: 20px; top: 0; bottom: 0; width: 4px; background: #e0e0e0; } .timeline-item { position: relative; padding-left: 50px; margin-bottom: 30px; } .timeline-dot { position: absolute; left: 12px; top: 5px; width: 20px; height: 20px; background: #667eea; border-radius: 50%; border: 4px solid white; } .timeline-content h3 { font-size: 1.1em; color: #2b3d6d; } .process-container { display: flex; flex-direction: column; gap: 15px; } .process-step { display: flex; align-items: flex-start; } .process-number { min-width: 40px; height: 40px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; } .process-content h4 { color: #2b3d6d; } .scenario-container h4 { color: #2b3d6d; margin-bottom: 10px; } .scenario-choices { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; } .scenario-choice { padding: 12px; border: 1px solid #ccc; background: white; border-radius: 5px; cursor: pointer; text-align: left; } .scenario-choice:hover { background: #f0f4ff; border-color: #667eea; } .dragdrop-instructions, .matching-instructions { font-style: italic; color: #666; margin-bottom: 15px; } .drag-items { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; background: #fff; border-radius: 5px; margin-bottom: 20px; min-height: 50px; } .drag-item { padding: 10px; background: #e0e0e0; border-radius: 5px; cursor: grab; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 120px; } .drag-item img { max-width: 80px; max-height: 60px; object-fit: contain; } .drop-zones { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; } .drop-zone { min-height: 150px; background: white; border: 2px dashed #ccc; border-radius: 5px; padding: 10px; } .drop-zone h4 { text-align: center; color: #666; margin-bottom: 10px; } .drop-zone.over { border-color: #667eea; } .drag-item.correct { background: var(--success-color); } .drag-item.incorrect { background: var(--danger-color); } .dragdrop-reset-btn { margin-top: 15px; padding: 10px 20px; border: 2px solid var(--primary-color); background: #fff; color: var(--primary-color); border-radius: 5px; cursor: pointer; display: block; margin: 15px auto 0; } .dragdrop-reset-btn:hover { background: #f0f4ff; } .matching-columns { display: flex; justify-content: space-between; gap: 20px; } .matching-column { flex: 1; display: flex; flex-direction: column; gap: 10px; } .matching-item { padding: 15px; background: white; border: 2px solid #ccc; border-radius: 5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; } .matching-item.selected { border-color: #667eea; background: #f0f4ff; } .matching-item.correct { border-color: var(--success-color); background: #dcfce7; } .matching-item.incorrect { border-color: var(--danger-color); background: #fee2e2; } .interactive-item-image { max-width: 100%; border-radius: 5px; margin-bottom: 10px; max-height: 200px; } .interactive-item-image.small { max-height: 100px; } .flashcard .interactive-item-image { max-height: 80px; } .quiz-question-text { color: var(--dark-blue); margin-bottom: 20px; } .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; } .quiz-option { display: flex; align-items: center; padding: 15px; background: white; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; transition: all 0.3s; } .quiz-option:hover { border-color: var(--primary-color); background: #f0f4ff; } .quiz-option.selected { border-color: var(--primary-dark); background: #e0e9ff; } .quiz-option span { font-weight: bold; margin-right: 15px; color: var(--primary-color); } .quiz-option p { margin: 0; } .quiz-option.correct { background: #dcfce7; border-color: var(--success-color); } .quiz-option.incorrect { background: #fee2e2; border-color: var(--danger-color); } .quiz-feedback-wrapper { margin-top: 15px; } .quiz-feedback { display: none; padding: 15px; border-radius: 8px; } .quiz-feedback.correct { background: #dcfce7; border-left: 5px solid var(--success-color); } .quiz-feedback.incorrect { background: #fee2e2; border-left: 5px solid var(--danger-color); } .quiz-nav { margin-top: 20px; text-align: right; } .quiz-check-btn, .quiz-next-btn { padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; } .quiz-check-btn { background-color: var(--warning-color); color: white; } .quiz-next-btn { background-color: var(--primary-color); color: white; } .quiz-summary { text-align: center; } .navigation-buttons { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e0e0e0; } .nav-btn { padding: 10px 24px; border: 2px solid #2b3d6d; background: white; color: #2b3d6d; border-radius: 8px; cursor: pointer; font-weight: 500; } .nav-btn:hover { background: #2b3d6d; color: white; } .nav-btn.next { background: #2b3d6d; color: white; } .nav-btn.next:hover { background: #1e2d54; border-color: #1e2d54; } .mobile-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; } @media (max-width: 800px) { .main-layout { flex-direction: column; height: auto; } .sidebar-container { position: fixed; top: 0; left: 0; height: 100%; z-index: 100; transform: translateX(-100%); } body.sidebar-open .sidebar-container { transform: translateX(0); } body.sidebar-open .mobile-overlay { display: block; } .mobile-menu-btn { display: block; } .content-container { overflow-y: visible; } .content-header { padding: 15px; } .content-title h2 { font-size: 28px; } .logo-placeholder { width: 80px; height: 80px; } .main-content { padding: 20px; } .quiz-options, .matching-columns { grid-template-columns: 1fr; flex-direction: column; } }`; 
+        }
+        
+        function getModuleScript() { 
+            return `function toggleFullscreen(elementId) { const elem = document.getElementById(elementId); if (!elem) return; if (!document.fullscreenElement) { if (elem.requestFullscreen) { elem.requestFullscreen(); } else if (elem.webkitRequestFullscreen) { /* Safari */ elem.webkitRequestFullscreen(); } else if (elem.msRequestFullscreen) { /* IE11 */ elem.msRequestFullscreen(); } } else { if (document.exitFullscreen) { document.exitFullscreen(); } } } function toggleMobileMenu() { document.body.classList.toggle('sidebar-open'); } let currentSectionId; const sectionIds = []; let activeVoiceover = { audio: null, btn: null, element: null }; function toggleVoiceoverMute(btn) { if(activeVoiceover.audio) { activeVoiceover.audio.muted = !activeVoiceover.audio.muted; btn.querySelector('.icon-sound-on').style.display = activeVoiceover.audio.muted ? 'none' : 'block'; btn.querySelector('.icon-sound-off').style.display = activeVoiceover.audio.muted ? 'block' : 'none'; } } document.addEventListener('DOMContentLoaded', () => { document.querySelectorAll('.main-content .section').forEach(s => sectionIds.push(s.id)); if (sectionIds.length > 0) { currentSectionId = sectionIds[0]; showSection(currentSectionId); } updateProgressBar(); document.querySelectorAll('.nav-items .nav-item').forEach(item => item.addEventListener('click', toggleMobileMenu)); const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { if (activeVoiceover.audio) { activeVoiceover.audio.pause(); } const audioSrc = entry.target.dataset.audioSrc; const btn = entry.target.querySelector('.voiceover-btn'); const audio = new Audio(audioSrc); audio.muted = false; audio.play().catch(e => console.warn("Autoplay was prevented. User must interact with the page first.")); activeVoiceover = { audio, btn, element: entry.target }; btn.querySelector('.icon-sound-on').style.display = 'block'; btn.querySelector('.icon-sound-off').style.display = 'none'; audio.onended = () => { btn.querySelector('.icon-sound-on').style.display = 'none'; btn.querySelector('.icon-sound-off').style.display = 'block'; }; } else { if (activeVoiceover.element === entry.target) { activeVoiceover.audio.pause(); activeVoiceover = { audio: null, btn: null, element: null }; } } }); }, { threshold: 0.5 }); document.querySelectorAll('[data-audio-src]').forEach(el => observer.observe(el)); }); function showSection(sectionId) { if (!sectionId) return; if(activeVoiceover.audio) { activeVoiceover.audio.pause(); } document.querySelectorAll('.main-content .section').forEach(s => s.classList.remove('active')); document.getElementById(sectionId)?.classList.add('active'); document.querySelectorAll('.nav-items .nav-item').forEach(n => n.classList.remove('active')); document.getElementById('nav-' + sectionId)?.classList.add('active'); currentSectionId = sectionId; } function updateProgressBar() { const navItems = document.querySelectorAll('.nav-items .nav-item'); const completedItems = document.querySelectorAll('.nav-items .nav-item.completed'); const total = navItems.length; if (total === 0) { document.querySelector('.progress-fill').style.width = '0%'; document.querySelector('.progress-text').textContent = '0% COMPLETE'; return; } const progress = Math.round((completedItems.length / total) * 100); document.querySelector('.progress-fill').style.width = progress + '%'; document.querySelector('.progress-text').textContent = progress + '% COMPLETE'; } function nextSection() { const currentIndex = sectionIds.indexOf(currentSectionId); const currentNavItem = document.getElementById('nav-' + currentSectionId); if (currentNavItem) { currentNavItem.classList.add('completed'); } if (currentIndex > -1 && currentIndex < sectionIds.length - 1) { showSection(sectionIds[currentIndex + 1]); } updateProgressBar(); } function previousSection() { const currentIndex = sectionIds.indexOf(currentSectionId); if (currentIndex > 0) { showSection(sectionIds[currentIndex - 1]); } } let quizScores = {}; function checkQuizAnswer(btn, correctAns) { const wrapper = btn.closest('.quiz-question-wrapper'); const selectedOption = wrapper.querySelector('.quiz-option.selected'); if (!selectedOption) { alert('Please select an answer.'); return; } const quizId = wrapper.closest('.quiz-container').id; if (!quizScores[quizId]) { quizScores[quizId] = 0; } const isCorrect = selectedOption.dataset.value === correctAns; if (isCorrect) { selectedOption.classList.add('correct'); wrapper.querySelector('.quiz-feedback.correct').style.display = 'block'; quizScores[quizId]++; } else { selectedOption.classList.add('incorrect'); wrapper.querySelector('.quiz-feedback.incorrect').style.display = 'block'; wrapper.querySelector('.quiz-option[data-value="' + correctAns + '"]').classList.add('correct'); } wrapper.querySelectorAll('.quiz-option').forEach(opt => opt.style.pointerEvents = 'none'); btn.style.display = 'none'; wrapper.querySelector('.quiz-next-btn').style.display = 'inline-block'; } function nextQuizQuestion(btn) { const wrapper = btn.closest('.quiz-question-wrapper'); const nextWrapper = wrapper.nextElementSibling; wrapper.style.display = 'none'; if (nextWrapper && nextWrapper.classList.contains('quiz-question-wrapper')) { nextWrapper.style.display = 'block'; } else { const summaryEl = wrapper.parentElement.querySelector('.quiz-summary'); const quizId = wrapper.closest('.quiz-container').id; const total = wrapper.parentElement.querySelectorAll('.quiz-question-wrapper').length; summaryEl.querySelector('.quiz-score').textContent = quizScores[quizId] || 0; summaryEl.style.display = 'block'; } } document.body.addEventListener('click', function(e) { if (e.target.matches('.dragdrop-reset-btn')) { const container = e.target.closest('.dragdrop-container'); if (!container) return; const itemsContainer = container.querySelector('.drag-items'); const droppedItems = container.querySelectorAll('.drop-zone .drag-item'); droppedItems.forEach(item => { item.classList.remove('correct', 'incorrect'); item.draggable = true; itemsContainer.appendChild(item); }); } if (e.target.matches('.quiz-option, .quiz-option *')) { const option = e.target.closest('.quiz-option'); if (option.closest('.quiz-options').style.pointerEvents === 'none') return; option.parentElement.querySelectorAll('.quiz-option').forEach(opt => opt.classList.remove('selected')); option.classList.add('selected'); } if (e.target.matches('.accordion-header')) { const content = e.target.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; } if (e.target.matches('.flashcard, .flashcard *')) { e.target.closest('.flashcard').classList.toggle('flipped'); } }); let draggedItem = null; document.body.addEventListener('dragstart', e => { if (e.target.matches('.drag-item')) { draggedItem = e.target; setTimeout(() => e.target.style.display = 'none', 0); } }); document.body.addEventListener('dragend', e => { if (e.target.matches('.drag-item')) { setTimeout(() => { e.target.style.display = 'flex'; draggedItem = null; }, 0); } }); document.querySelectorAll('.drop-zone').forEach(dropZone => { dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); }); dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over')); dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('over'); if (draggedItem) { const isCorrect = draggedItem.dataset.category.trim().toLowerCase() === dropZone.dataset.category.trim().toLowerCase(); draggedItem.classList.add(isCorrect ? 'correct' : 'incorrect'); draggedItem.draggable = false; dropZone.appendChild(draggedItem); } }); }); let selectedItem = null; document.body.addEventListener('click', e => { if (e.target.matches('.matching-item, .matching-item *')) { const item = e.target.closest('.matching-item'); if (item.classList.contains('correct')) return; if (!selectedItem) { selectedItem = item; selectedItem.classList.add('selected'); } else { if (selectedItem.parentElement === item.parentElement) { selectedItem.classList.remove('selected'); selectedItem = item; selectedItem.classList.add('selected'); return; } const isMatch = selectedItem.dataset.matchId === item.dataset.matchId; selectedItem.classList.add(isMatch ? 'correct' : 'incorrect'); item.classList.add(isMatch ? 'correct' : 'incorrect'); if (isMatch) { selectedItem.style.pointerEvents = 'none'; item.style.pointerEvents = 'none'; selectedItem.classList.remove('selected'); selectedItem = null; } else { setTimeout(() => { selectedItem.classList.remove('selected', 'incorrect'); item.classList.remove('incorrect'); selectedItem = null; }, 1000); } } } });`; 
+        }
+        
+        function downloadHTML() { 
+            if (!generatedHTML) { 
+                alert('Please generate the HTML first'); 
+                return; 
+            } 
+            const blob = new Blob([generatedHTML], { type: 'text/html' }); 
+            const url = window.URL.createObjectURL(blob); 
+            const a = document.createElement('a'); 
+            a.href = url; 
+            const moduleName = document.getElementById('moduleName').value || 'module'; 
+            a.download = `${moduleName.replace(/\s+/g, '-')}.html`; 
+            document.body.appendChild(a); 
+            a.click(); 
+            document.body.removeChild(a); 
+            window.URL.revokeObjectURL(url); 
+        }
