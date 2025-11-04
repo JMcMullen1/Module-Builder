@@ -1632,7 +1632,10 @@
             const moduleName = document.getElementById('moduleName').value || 'module'; 
             a.download = `${moduleName.replace(/\s+/g, '-')}.html`; 
             document.body.appendChild(a); 
-            a.click(); 
-            document.body.removeChild(a); 
-            window.URL.revokeObjectURL(url); 
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
         }
+    </script>
+</body>
+</html>
